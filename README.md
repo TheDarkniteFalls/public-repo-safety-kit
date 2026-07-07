@@ -39,6 +39,18 @@ No public-repo guard findings.
 - Common private-key and token-looking strings.
 - Raw export file names such as `email_export.json` or `contacts.csv`.
 
+## How These Fit Together
+
+Public Repo Safety Kit is one piece of a small public toolkit:
+
+- Public Repo Safety Kit checks a public-candidate repo before publishing.
+- [EvidenceGate](https://github.com/TheDarkniteFalls/evidencegate) records the
+  evidence and checks behind an AI-assisted change.
+- [Local Model Reliability Example](https://github.com/TheDarkniteFalls/local-model-reliability-example)
+  validates structured model output before trusting it.
+- [Context Boundary Examples](https://github.com/TheDarkniteFalls/context-boundary-examples)
+  checks whether an answer stays inside supplied evidence.
+
 ## Public Data Notice
 
 This repository uses synthetic examples only. Do not add credentials, personal
