@@ -39,6 +39,19 @@ No public-repo guard findings.
 - Common private-key and token-looking strings.
 - Raw export file names such as `email_export.json` or `contacts.csv`.
 
+## Public-Safe Repo Template
+
+`templates/public-repo/` is a copyable starter for small public repos:
+
+- `README.template.md`
+- `SECURITY.md`
+- `.gitignore`
+- `.github/workflows/checks.yml`
+- `PUBLICATION_CHECKLIST.md`
+
+Use it before adding real project files, then replace the placeholder command
+with the smallest useful check for that repo.
+
 ## How These Fit Together
 
 Public Repo Safety Kit is one piece of a small public toolkit:
@@ -68,5 +81,6 @@ manual review before publishing anything important.
 ```sh
 python3 public_repo_guard.py --self-test
 python3 public_repo_guard.py .
+python3 public_repo_guard.py templates/public-repo
 python3 -m py_compile public_repo_guard.py
 ```

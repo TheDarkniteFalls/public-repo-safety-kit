@@ -14,4 +14,5 @@ jobs:
           python-version: "3.x"
       - run: python3 public_repo_guard.py --self-test
       - run: python3 public_repo_guard.py .
+      - run: python3 public_repo_guard.py templates/public-repo
       - run: python3 -m py_compile public_repo_guard.py
