@@ -60,11 +60,14 @@ Public Repo Safety Kit is one piece of a small public toolkit:
 - [EvidenceGate](https://github.com/TheDarkniteFalls/evidencegate) records the
   evidence and checks behind an AI-assisted change.
 - [Local Model Reliability Example](https://github.com/TheDarkniteFalls/local-model-reliability-example)
-  validates structured model output before trusting it.
+  validates structured model output and protected-path boundaries before
+  trusting it.
 - [Context Boundary Examples](https://github.com/TheDarkniteFalls/context-boundary-examples)
   checks whether an answer stays inside supplied evidence.
 - [Green-Spine QA Pattern](https://github.com/TheDarkniteFalls/green-spine-qa-pattern)
   bundles the important path behind one repeatable command.
+- [Codex Project Instructions Starter](https://github.com/TheDarkniteFalls/codex-project-instructions-starter)
+  gives coding agents clear project rules before they work.
 
 ## Public Data Notice
 
