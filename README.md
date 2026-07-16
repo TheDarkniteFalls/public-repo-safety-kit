@@ -1,5 +1,17 @@
 # Public Repo Safety Kit
 
+<!-- toolkit-trust-card:start -->
+> **Public contract:** Stable tool · about 5 min · Python 3 · no model · no network
+>
+> **Operation:** Read-only check; examples may use temporary files
+>
+> **A pass establishes:** The checked tree avoids the kit's known private-path, credential, identity, and publication-risk cases.
+>
+> **It does not establish:** A pass is not a complete security review and does not grant permission to publish.
+>
+> **First check:** `python3 public_repo_guard.py --self-test`
+<!-- toolkit-trust-card:end -->
+
 Small, dependency-free checks for repositories that are about to be made public.
 
 This project is for people who want one extra local sanity check before pushing
