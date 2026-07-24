@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
+import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -35,6 +37,10 @@ class Finding:
     reason: str
 
 
+class GitInspectionError(RuntimeError):
+    """Raised when Git-aware inspection cannot produce a trustworthy result."""
+
+
 def interesting_files(root: Path):
     for path in root.rglob("*"):
         rel = path.relative_to(root)
@@ -43,9 +49,12 @@ def interesting_files(root: Path):
         yield path, rel
 
 
-def check(root: Path) -> list[Finding]:
+def check_paths(root: Path, relative_paths) -> list[Finding]:
     findings: list[Finding] = []
-    for path, rel in interesting_files(root):
+    for rel in relative_paths:
+        path = root / rel
+        if not path.exists() and not path.is_symlink():
+            continue
         if path.is_symlink():
             findings.append(Finding(rel, "symlink requires manual review"))
             continue
@@ -65,6 +74,112 @@ def check(root: Path) -> list[Finding]:
     return findings
 
 
+def check(root: Path) -> list[Finding]:
+    return check_paths(root, (rel for _, rel in interesting_files(root)))
+
+
+def run_git(root: Path, *args: str, allowed: tuple[int, ...] = (0,)):
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(root), *args],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except (FileNotFoundError, OSError) as exc:
+        raise GitInspectionError("Git is unavailable") from exc
+    if result.returncode not in allowed:
+        command = " ".join(args)
+        raise GitInspectionError(
+            f"git {command} failed with exit status {result.returncode}"
+        )
+    return result
+
+
+def require_exact_git_root(root: Path) -> None:
+    result = run_git(root, "rev-parse", "--show-toplevel")
+    top_level_text = os.fsdecode(result.stdout).rstrip("\r\n")
+    if not top_level_text:
+        raise GitInspectionError("Git returned no worktree root")
+    try:
+        top_level = Path(top_level_text).resolve()
+    except OSError as exc:
+        raise GitInspectionError("Git returned an unreadable worktree root") from exc
+    if top_level != root:
+        raise GitInspectionError(
+            "target must be the exact Git worktree root, not a parent or subdirectory"
+        )
+
+
+def git_candidate_paths(root: Path) -> list[Path]:
+    result = run_git(
+        root,
+        "ls-files",
+        "--cached",
+        "--others",
+        "--exclude-standard",
+        "-z",
+    )
+    candidates: list[Path] = []
+    for raw_path in result.stdout.split(b"\0"):
+        if not raw_path:
+            continue
+        relative = Path(os.fsdecode(raw_path))
+        if relative.is_absolute() or ".." in relative.parts:
+            raise GitInspectionError("Git returned a path outside the worktree")
+        candidates.append(relative)
+    return sorted(set(candidates), key=lambda path: path.as_posix())
+
+
+def is_github_noreply(email: str) -> bool:
+    normalized = email.strip().lower()
+    github_domain = "github" + ".com"
+    return normalized == "noreply" + "@" + github_domain or normalized.endswith(
+        "@" + "users.noreply." + github_domain
+    )
+
+
+def git_history_findings(root: Path) -> list[Finding]:
+    head = run_git(root, "rev-parse", "--verify", "--quiet", "HEAD", allowed=(0, 1))
+    if head.returncode == 1:
+        return []
+
+    result = run_git(root, "log", "-z", "--format=%H%x00%ae%x00%ce", "HEAD")
+    fields = result.stdout.split(b"\0")
+    if fields and fields[-1] == b"":
+        fields.pop()
+    if len(fields) % 3:
+        raise GitInspectionError("Git returned malformed commit identity data")
+
+    findings: list[Finding] = []
+    for index in range(0, len(fields), 3):
+        commit = os.fsdecode(fields[index])
+        author_email = os.fsdecode(fields[index + 1])
+        committer_email = os.fsdecode(fields[index + 2])
+        for role, email in (
+            ("author", author_email),
+            ("committer", committer_email),
+        ):
+            if not is_github_noreply(email):
+                findings.append(
+                    Finding(
+                        Path("<git-history>"),
+                        (
+                            f"{role} email in commit {commit[:12]} is not a "
+                            "GitHub noreply address; manual review required"
+                        ),
+                    )
+                )
+    return findings
+
+
+def check_git_aware(root: Path) -> list[Finding]:
+    require_exact_git_root(root)
+    findings = check_paths(root, git_candidate_paths(root))
+    findings.extend(git_history_findings(root))
+    return findings
+
+
 def self_test() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -78,11 +193,16 @@ def self_test() -> None:
         assert "possible assigned secret" in reasons
 
 
-def main() -> int:
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("path", nargs="?", default=".")
     parser.add_argument("--self-test", action="store_true")
-    args = parser.parse_args()
+    parser.add_argument(
+        "--git-aware",
+        action="store_true",
+        help="scan Git publication candidates and reachable commit identities",
+    )
+    args = parser.parse_args(argv)
 
     if args.self_test:
         self_test()
@@ -94,7 +214,14 @@ def main() -> int:
         print(f"not a directory: {root}", file=sys.stderr)
         return 2
 
-    findings = check(root)
+    if args.git_aware:
+        try:
+            findings = check_git_aware(root)
+        except GitInspectionError as exc:
+            print(f"Git-aware inspection failed: {exc}", file=sys.stderr)
+            return 2
+    else:
+        findings = check(root)
     if not findings:
         print("No public-repo guard findings.")
         return 0
