@@ -1,34 +1,17 @@
 # Public Repo Safety Kit
 
-<!-- toolkit-trust-card:start -->
-> **Public contract:** Stable tool · about 5 min · Python 3; Git for repository checks · no model · no network
->
-> **Operation:** Read-only check; examples may use temporary files
->
-> **A pass establishes:** The ordinary scan checks the supplied tree; Git-aware mode checks tracked and nonignored untracked candidates plus reachable commit author and committer email identities.
->
-> **It does not establish:** It does not scan historical file contents, replace a dedicated secret scanner or manual review, or grant permission to publish.
->
-> **First check:** `python3 public_repo_guard.py --self-test`
-<!-- toolkit-trust-card:end -->
+Before you share a repository, check for files and text that may not belong
+in public: a real `.env` file, an export of contacts, a symbolic link or a
+value that looks like a credential. This small Python tool reports matches
+for you to review locally. It needs no extra dependencies.
 
-Small, dependency-free checks for repositories that are about to be made public.
-
-This project is for people who want one extra local sanity check before pushing
-a repo into public view.
-
-This is not a secret scanner replacement. It is a lightweight guard for the
-boring mistakes that often happen before publishing: real `.env` files,
-symlinks, private-key material, obvious token strings, and raw export-style
-files.
-
-## Why It Exists
-
-Public repos often leak boring things: a real `.env`, a private export file, a
-symlink to somewhere outside the repo, or a token-looking value in a fixture.
-This guard catches those cases early and prints reviewable findings.
+Use it as an extra check alongside a dedicated secret scanner and human
+review. It does not make a publication decision or publish anything.
 
 ## Run
+
+From this repository’s folder, use Python 3 and replace the example path with
+the folder you intend to check. Git-aware mode also needs Git:
 
 ```sh
 python3 public_repo_guard.py /path/to/public-candidate-repo
@@ -46,10 +29,28 @@ Example clean output:
 No public-repo guard findings.
 ```
 
+Read any findings before proceeding. A match needs investigation; it is not
+a confirmed secret. A clean result means this guard found no matches in the
+files and metadata it inspected, not that publication is safe.
+
+<!-- toolkit-trust-card:placement -->
+
+<!-- toolkit-trust-card:start -->
+> **Public contract:** Stable tool · about 5 min · Python 3; Git for repository checks · no model · no network
+>
+> **Operation:** Read-only check; examples may use temporary files
+>
+> **A pass establishes:** The ordinary scan checks the supplied tree; Git-aware mode checks tracked and nonignored untracked candidates plus reachable commit author and committer email identities.
+>
+> **It does not establish:** It does not scan historical file contents, replace a dedicated secret scanner or manual review, or grant permission to publish.
+>
+> **First check:** `python3 public_repo_guard.py --self-test`
+<!-- toolkit-trust-card:end -->
+
 ## What It Checks
 
 - Real environment files such as `.env` and `.env.local`.
-- Symlinks, which can point outside a repository.
+- Symbolic links (symlinks), which can point to files outside a repository.
 - Common private-key and token-looking strings.
 - Raw export file names such as `email_export.json` or `contacts.csv`.
 
@@ -85,20 +86,17 @@ publish.
 Use it before adding real project files, then replace the placeholder command
 with the smallest useful check for that repo.
 
-## How These Fit Together
+## Related Tools
 
-Public Repo Safety Kit is one piece of a small public toolkit:
-
-- Public Repo Safety Kit checks a public-candidate repo before publishing.
+For checks beyond publication hygiene, try these related examples:
 - [EvidenceGate](https://github.com/TheDarkniteFalls/evidencegate) records the
   evidence and checks behind an AI-assisted change.
 - [Local Model Reliability Example](https://github.com/TheDarkniteFalls/local-model-reliability-example)
-  validates structured model output and protected-path boundaries before
-  trusting it.
+  validates structured model output and protected-path boundaries.
 - [Context Boundary Examples](https://github.com/TheDarkniteFalls/context-boundary-examples)
   checks whether an answer stays inside supplied evidence.
 - [Green-Spine QA Pattern](https://github.com/TheDarkniteFalls/green-spine-qa-pattern)
-  bundles the important path behind one repeatable command.
+  puts checks for an important workflow behind one repeatable command.
 - [Codex Project Instructions Starter](https://github.com/TheDarkniteFalls/codex-project-instructions-starter)
   gives coding agents clear project rules before they work.
 
@@ -109,8 +107,9 @@ data, connector exports, private notes, or raw logs.
 
 ## Scope
 
-The goal is a small pre-publish sanity check. Use a real secret scanner and
-manual review before publishing anything important.
+Keep the result with your other pre-publication checks. The guard’s coverage
+is limited to the rules above; dedicated secret scanning and human review
+are still needed before publication.
 
 ## Quality Checks
 
